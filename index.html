@@ -1,0 +1,2085 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LARI — Trainer</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: #1e1e2e;
+    --accent: #e8ff47;
+    --accent2: #ff6b35;
+    --accent3: #4dc8ff;
+    --text: #f0f0f5;
+    --muted: #5a5a72;
+    --warmup: #ff9500;
+    --interval: #ff3b5c;
+    --recovery: #00d4aa;
+    --cooldown: #4dc8ff;
+    --easy: #a8e6cf;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(232,255,71,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,255,71,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .logo span {
+    color: var(--muted);
+    font-size: 1rem;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.3em;
+    display: block;
+    text-transform: uppercase;
+  }
+
+  .live-clock {
+    font-family: 'DM Mono', monospace;
+    font-size: 2.4rem;
+    font-weight: 300;
+    color: var(--text);
+    letter-spacing: 0.05em;
+  }
+
+  .live-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: right;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* Layout */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+
+  .card-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  /* Config section */
+  .config-section { display: flex; flex-direction: column; gap: 16px; }
+
+  .run-type-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .tab-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab-btn.active {
+    background: var(--accent);
+    color: #0a0a0f;
+    border-color: var(--accent);
+    font-weight: 500;
+  }
+
+  .phase-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .phase-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .phase-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .phase-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  input[type="number"], input[type="text"] {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    padding: 10px 14px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="number"]:focus, input[type="text"]:focus {
+    border-color: var(--accent);
+  }
+
+  input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
+
+  .input-hint {
+    font-size: 0.65rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .pace-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .repeats-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .repeats-row label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* Easy run only fields */
+  .easy-only { display: none; }
+  .easy-only.visible { display: block; }
+  .interval-only { display: block; }
+  .interval-only.hidden { display: none; }
+
+  /* Start button */
+  .btn-start {
+    background: var(--accent);
+    color: #0a0a0f;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.15em;
+    padding: 16px;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-start:hover { background: #d4eb2d; transform: translateY(-1px); }
+  .btn-start:active { transform: translateY(0); }
+  .btn-start.stop { background: var(--accent2); }
+  .btn-start.stop:hover { background: #e55a27; }
+
+  /* Timer display */
+  .timer-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .phase-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .phase-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 0.15em;
+    color: var(--text);
+  }
+
+  .phase-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+
+  /* Phase progress bar */
+  .progress-bar-wrap {
+    background: var(--surface);
+    border-radius: 4px;
+    height: 4px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s linear;
+    background: var(--accent);
+  }
+
+  /* Big timer */
+  .timer-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 7rem;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    text-align: center;
+    color: var(--text);
+    margin: 8px 0 4px;
+  }
+
+  .timer-phase-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  /* Pace display */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .metric-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+
+  .metric-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .metric-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Controls */
+  .controls-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .btn-ctrl {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-ctrl:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-ctrl:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .btn-pause.paused {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(232,255,71,0.08);
+  }
+
+  /* Lap / Split Log */
+  .splits-card { margin-top: 20px; }
+
+  .splits-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .btn-clear-splits {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-clear-splits:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .splits-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+  }
+
+  .splits-table th {
+    color: var(--muted);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .splits-table td {
+    padding: 8px 8px;
+    border-bottom: 1px solid rgba(30,30,46,0.5);
+    color: var(--text);
+  }
+
+  .splits-table tr:last-child td { border-bottom: none; }
+
+  .split-phase-tag {
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 10px;
+    border: 1px solid;
+  }
+
+  .empty-splits {
+    text-align: center;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    padding: 24px 0;
+  }
+
+  /* Total elapsed */
+  .total-elapsed {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 8px;
+    letter-spacing: 0.1em;
+  }
+
+  /* Idle state */
+  .idle-overlay {
+    text-align: center;
+    padding: 20px 0;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+  }
+
+  /* Pulse animation for active */
+  @keyframes pulse-ring {
+    0% { opacity: 0.5; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.3); }
+  }
+
+  .pulse-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    background: var(--accent);
+    position: relative;
+  }
+
+  .pulse-dot::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    animation: pulse-ring 1s infinite;
+  }
+
+  /* Finish celebration */
+  @keyframes flash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .finished .timer-display {
+    animation: flash 0.8s ease 3;
+    color: var(--accent);
+  }
+
+  /* Speed display — big treadmill number */
+  .speed-banner {
+    background: linear-gradient(135deg, rgba(232,255,71,0.06) 0%, rgba(232,255,71,0.02) 100%);
+    border: 1px solid rgba(232,255,71,0.2);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .speed-banner-left {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .speed-value-big {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3.6rem;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    color: var(--accent);
+  }
+
+  .speed-unit {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+  }
+
+  .speed-banner-right {
+    text-align: right;
+  }
+
+  .speed-pace-ref {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  /* Speed guide card */
+  .speed-guide-card { margin-top: 0; }
+
+  .speed-guide-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 10px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    border: 1px solid transparent;
+    transition: all 0.3s;
+  }
+
+  .speed-guide-row.active-phase {
+    border-color: rgba(232,255,71,0.3);
+    background: rgba(232,255,71,0.05);
+  }
+
+  .speed-guide-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .speed-guide-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .speed-guide-vals {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    text-align: right;
+  }
+
+  .speed-guide-kmh {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 0.05em;
+    line-height: 1;
+  }
+
+  .speed-guide-pace {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  .active-arrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .speed-guide-row.active-phase .active-arrow { opacity: 1; }
+
+  /* ——— Environment Selector ——— */
+  .env-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .env-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 14px 10px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .env-btn .env-icon { font-size: 1.6rem; line-height: 1; }
+  .env-btn .env-name { font-size: 0.72rem; letter-spacing: 0.18em; }
+  .env-btn .env-desc { font-size: 0.58rem; letter-spacing: 0.1em; color: var(--muted); opacity: 0.7; }
+
+  .env-btn.active {
+    border-color: var(--accent);
+    color: var(--text);
+    background: rgba(232,255,71,0.07);
+  }
+
+  .env-btn.active .env-icon { filter: none; }
+  .env-btn.active .env-name { color: var(--accent); }
+
+  /* ——— GPS Panel ——— */
+  .gps-panel {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+
+  .gps-panel.visible { display: block; }
+
+  .gps-status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .gps-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    display: inline-block;
+    margin-right: 8px;
+    transition: background 0.3s;
+  }
+
+  .gps-dot.acquiring { background: var(--warmup); animation: gps-pulse 1s infinite; }
+  .gps-dot.locked    { background: var(--recovery); }
+  .gps-dot.lost      { background: var(--interval); }
+
+  @keyframes gps-pulse {
+    0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+  }
+
+  .gps-status-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+  }
+
+  .gps-accuracy {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  /* Pace comparison */
+  .pace-compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  .pace-cmp-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+
+  .pace-cmp-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .pace-cmp-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .pace-diff-badge {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+    margin-top: 10px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .pace-diff-badge.faster { color: var(--recovery); border-color: var(--recovery); background: rgba(0,212,170,0.08); }
+  .pace-diff-badge.slower { color: var(--interval); border-color: var(--interval); background: rgba(255,59,92,0.08); }
+  .pace-diff-badge.ontarget { color: var(--accent); border-color: var(--accent); background: rgba(232,255,71,0.08); }
+  .pace-diff-badge.nodata { color: var(--muted); border-color: var(--border); }
+
+  /* Distance metric row */
+  .distance-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .dist-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .dist-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.2rem;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .dist-unit {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+  }
+
+  .dist-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* GPS Activate button */
+  .btn-gps-activate {
+    width: 100%;
+    background: rgba(77,200,255,0.1);
+    border: 1px solid var(--accent3);
+    border-radius: 10px;
+    color: var(--accent3);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .btn-gps-activate:hover { background: rgba(77,200,255,0.2); }
+  .btn-gps-activate:active { transform: scale(0.98); }
+  .btn-gps-activate.granted {
+    background: rgba(0,212,170,0.1);
+    border-color: var(--recovery);
+    color: var(--recovery);
+    pointer-events: none;
+  }
+  .btn-gps-activate.denied {
+    background: rgba(255,59,92,0.1);
+    border-color: var(--interval);
+    color: var(--interval);
+  }
+
+  .gps-ios-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    line-height: 1.6;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+    display: none;
+  }
+  .gps-ios-note.visible { display: block; }
+
+  /* Countdown overlay */
+  .countdown-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .countdown-overlay.visible { opacity: 1; }
+
+  .countdown-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(10,10,15,0.82);
+    backdrop-filter: blur(6px);
+  }
+
+  .countdown-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+  }
+
+  .countdown-next-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .countdown-next-phase {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    letter-spacing: 0.15em;
+    margin-bottom: 24px;
+  }
+
+  .countdown-number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14rem;
+    line-height: 0.85;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+    text-shadow: 0 0 80px rgba(232,255,71,0.4);
+    animation: countPop 1s ease-out;
+  }
+
+  @keyframes countPop {
+    0%   { transform: scale(1.4); opacity: 0.5; }
+    30%  { transform: scale(1.0); opacity: 1; }
+    80%  { transform: scale(1.0); opacity: 1; }
+    100% { transform: scale(0.85); opacity: 0.6; }
+  }
+
+  .countdown-bar-wrap {
+    width: 260px;
+    height: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    margin: 28px auto 0;
+    overflow: hidden;
+  }
+
+  .countdown-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.9s linear;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .timer-display { font-size: 5rem; }
+    .live-clock { font-size: 1.6rem; }
+    .logo { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <div class="logo">PACE</div>
+      <div class="logo"><span>Interval Trainer</span></div>
+    </div>
+    <div>
+      <div class="live-clock" id="liveClock">00:00:00</div>
+      <div class="live-date" id="liveDate"></div>
+    </div>
+  </header>
+
+  <div class="main-grid">
+    <!-- LEFT: Config -->
+    <div class="config-section">
+
+      <!-- Environment: Treadmill / Outdoor -->
+      <div class="card">
+        <div class="card-label">Lokasi Latihan</div>
+        <div class="env-selector">
+          <button class="env-btn active" id="envTreadmill" onclick="setEnv('treadmill')">
+            <span class="env-icon">🏃</span>
+            <span class="env-name">Treadmill</span>
+            <span class="env-desc">Estimasi jarak</span>
+          </button>
+          <button class="env-btn" id="envOutdoor" onclick="setEnv('outdoor')">
+            <span class="env-icon">🌍</span>
+            <span class="env-name">Outdoor</span>
+            <span class="env-desc">GPS · Pace real</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Mode Latihan</div>
+        <div class="run-type-tabs">
+          <button class="tab-btn active" onclick="setMode('interval')">Interval</button>
+          <button class="tab-btn" onclick="setMode('easy')">Easy / Tempo</button>
+        </div>
+      </div>
+
+      <!-- GPS Activation Card (outdoor only) -->
+      <div class="card" id="gpsActivateCard" style="display:none">
+        <div class="card-label">Izin Lokasi GPS</div>
+        <div class="gps-ios-note visible" id="gpsNote">
+          📍 Tap tombol di bawah untuk mengaktifkan GPS.<br>
+          iOS akan meminta izin lokasi — pilih <strong>"Allow"</strong>.<br>
+          Jika sudah pernah ditolak, buka:<br>
+          Settings → Safari → Location → Allow
+        </div>
+        <button class="btn-gps-activate" id="gpsActivateBtn" onclick="requestGPSPermission()">
+          <span>📡</span> Aktifkan GPS
+        </button>
+      </div>
+
+      <!-- Interval Config -->
+      <div class="card interval-only" id="intervalConfig">
+        <div class="card-label">Konfigurasi Interval</div>
+
+        <div class="phase-input-group">
+          <div class="phase-label"><span class="phase-dot" style="background:var(--warmup)"></span> Warm Up</div>
+          <div class="phase-row">
+            <div>
+              <input type="number" id="warmupMin" value="5" min="0" placeholder="menit">
+              <div class="input-hint">menit</div>
+            </div>
+            <div>
+              <input type="number" id="warmupSec" value="0" min="0" max="59" placeholder="detik">
+              <div class="input-hint">detik</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phase-input-group" style="margin-top:14px">
+          <div class="phase-label"><span class="phase-dot" style="background:var(--interval)"></span> Interval</div>
+          <div class="phase-row">
+            <div>
+              <input type="number" id="intervalMin" value="1" min="0" placeholder="menit">
+              <div class="input-hint">menit</div>
+            </div>
+            <div>
+              <input type="number" id="intervalSec" value="0" min="0" max="59" placeholder="detik">
+              <div class="input-hint">detik</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phase-input-group" style="margin-top:14px">
+          <div class="phase-label"><span class="phase-dot" style="background:var(--recovery)"></span> Recovery</div>
+          <div class="phase-row">
+            <div>
+              <input type="number" id="recoveryMin" value="1" min="0" placeholder="menit">
+              <div class="input-hint">menit</div>
+            </div>
+            <div>
+              <input type="number" id="recoverySec" value="0" min="0" max="59" placeholder="detik">
+              <div class="input-hint">detik</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phase-input-group" style="margin-top:14px">
+          <div class="phase-label"><span class="phase-dot" style="background:var(--cooldown)"></span> Cooling Down</div>
+          <div class="phase-row">
+            <div>
+              <input type="number" id="cooldownMin" value="5" min="0" placeholder="menit">
+              <div class="input-hint">menit</div>
+            </div>
+            <div>
+              <input type="number" id="cooldownSec" value="0" min="0" max="59" placeholder="detik">
+              <div class="input-hint">detik</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="repeats-row" style="margin-top:16px">
+          <label>Jumlah Set</label>
+          <input type="number" id="repeatCount" value="5" min="1" style="max-width:80px">
+        </div>
+      </div>
+
+      <!-- Easy Run Config -->
+      <div class="card easy-only" id="easyConfig">
+        <div class="card-label">Konfigurasi Easy / Tempo Run</div>
+
+        <div class="phase-input-group">
+          <div class="phase-label"><span class="phase-dot" style="background:var(--warmup)"></span> Warm Up</div>
+          <div class="phase-row">
+            <div>
+              <input type="number" id="easyWarmupMin" value="5" min="0">
+              <div class="input-hint">menit</div>
+            </div>
+            <div>
+              <input type="number" id="easyWarmupSec" value="0" min="0" max="59">
+              <div class="input-hint">detik</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phase-input-group" style="margin-top:14px">
+          <div class="phase-label"><span class="phase-dot" style="background:var(--easy)"></span> Easy / Tempo</div>
+          <div class="phase-row">
+            <div>
+              <input type="number" id="easyRunMin" value="30" min="0">
+              <div class="input-hint">menit</div>
+            </div>
+            <div>
+              <input type="number" id="easyRunSec" value="0" min="0" max="59">
+              <div class="input-hint">detik</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="phase-input-group" style="margin-top:14px">
+          <div class="phase-label"><span class="phase-dot" style="background:var(--cooldown)"></span> Cooling Down</div>
+          <div class="phase-row">
+            <div>
+              <input type="number" id="easyCooldownMin" value="5" min="0">
+              <div class="input-hint">menit</div>
+            </div>
+            <div>
+              <input type="number" id="easyCooldownSec" value="0" min="0" max="59">
+              <div class="input-hint">detik</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pace Config -->
+      <div class="card">
+        <div class="card-label">Target Pace (min/km)</div>
+        <div class="pace-grid" id="paceGrid">
+          <div>
+            <div class="phase-label" style="margin-bottom:6px"><span class="phase-dot" style="background:var(--warmup)"></span> Warm Up</div>
+            <input type="text" id="paceWarmup" value="6:30" placeholder="6:30">
+          </div>
+          <div class="interval-only" id="paceIntervalWrap">
+            <div class="phase-label" style="margin-bottom:6px"><span class="phase-dot" style="background:var(--interval)"></span> Interval</div>
+            <input type="text" id="paceInterval" value="4:30" placeholder="4:30">
+          </div>
+          <div class="interval-only" id="paceRecoveryWrap">
+            <div class="phase-label" style="margin-bottom:6px"><span class="phase-dot" style="background:var(--recovery)"></span> Recovery</div>
+            <input type="text" id="paceRecovery" value="6:00" placeholder="6:00">
+          </div>
+          <div>
+            <div class="phase-label" style="margin-bottom:6px"><span class="phase-dot" style="background:var(--cooldown)"></span> Cooldown</div>
+            <input type="text" id="paceCooldown" value="7:00" placeholder="7:00">
+          </div>
+          <div class="easy-only" id="paceEasyWrap">
+            <div class="phase-label" style="margin-bottom:6px"><span class="phase-dot" style="background:var(--easy)"></span> Easy Run</div>
+            <input type="text" id="paceEasy" value="5:30" placeholder="5:30">
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-start" id="startBtn" onclick="toggleStart()">MULAI LATIHAN</button>
+    </div>
+
+    <!-- RIGHT: Timer -->
+    <div>
+      <div class="card timer-card" id="timerCard">
+        <div class="phase-indicator">
+          <div>
+            <div class="card-label" style="margin-bottom:4px">FASE AKTIF</div>
+            <div class="phase-name" id="phaseName">— SIAP —</div>
+          </div>
+          <div id="phaseBadge" class="phase-badge" style="color:var(--muted);border-color:var(--muted)">IDLE</div>
+        </div>
+
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+        </div>
+
+        <div class="timer-display" id="timerDisplay">00:00</div>
+        <div class="timer-phase-sub" id="timerSub">Waktu tersisa di fase ini</div>
+
+        <!-- Speed banner for treadmill -->
+        <div class="speed-banner" id="speedBanner">
+          <div class="speed-banner-left">
+            <div class="speed-value-big" id="speedBig">—</div>
+            <div class="speed-unit">km/j</div>
+          </div>
+          <div class="speed-banner-right">
+            <div class="speed-pace-ref" id="speedPaceRef">— min/km</div>
+            <div class="speed-pace-ref" style="margin-top:4px;font-size:0.6rem">TARGET TREADMILL</div>
+          </div>
+        </div>
+
+        <!-- GPS Panel (outdoor only) -->
+        <div class="gps-panel" id="gpsPanel">
+          <div class="gps-status-row">
+            <div class="gps-status-text">
+              <span class="gps-dot acquiring" id="gpsDot"></span>
+              <span id="gpsStatusText">Tap "Aktifkan GPS" di kiri</span>
+            </div>
+            <div class="gps-accuracy" id="gpsAccuracy"></div>
+          </div>
+          <div class="pace-compare-grid">
+            <div class="pace-cmp-box">
+              <div class="pace-cmp-val" id="realPaceVal">—:——</div>
+              <div class="pace-cmp-label">Pace Real</div>
+            </div>
+            <div class="pace-cmp-box">
+              <div class="pace-cmp-val" id="targetPaceVal">—:——</div>
+              <div class="pace-cmp-label">Target</div>
+            </div>
+            <div class="pace-cmp-box">
+              <div class="pace-cmp-val" id="paceDiffVal">—</div>
+              <div class="pace-cmp-label">Selisih</div>
+            </div>
+          </div>
+          <div class="pace-diff-badge nodata" id="paceDiffBadge">Aktifkan GPS dulu</div>
+        </div>
+
+        <!-- Distance Row -->
+        <div class="distance-row">
+          <div class="dist-box">
+            <div>
+              <div class="dist-val" id="distTotal">0.00</div>
+              <div class="dist-label" id="distTotalLabel">Total Jarak</div>
+            </div>
+            <div class="dist-unit">km</div>
+          </div>
+          <div class="dist-box">
+            <div>
+              <div class="dist-val" id="distPhase">0.00</div>
+              <div class="dist-label">Fase Ini</div>
+            </div>
+            <div class="dist-unit">km</div>
+          </div>
+        </div>
+
+        <div class="metrics-row">
+          <div class="metric-box">
+            <div class="metric-value" id="metricPace">—:——</div>
+            <div class="metric-label">Target Pace</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value" id="metricSet">—</div>
+            <div class="metric-label">Set / Total</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value" id="metricElapsed">00:00</div>
+            <div class="metric-label">Total Waktu</div>
+          </div>
+        </div>
+
+        <div class="controls-row">
+          <button class="btn-ctrl btn-pause" id="pauseBtn" onclick="togglePause()" disabled>⏸ PAUSE</button>
+          <button class="btn-ctrl" id="splitBtn" onclick="addManualSplit()" disabled>✚ MANUAL SPLIT</button>
+        </div>
+
+        <div class="total-elapsed" id="totalElapsedLabel"></div>
+      </div>
+
+      <!-- Treadmill Speed Guide / Outdoor Pace Reference -->
+      <div class="card speed-guide-card" style="margin-top:20px" id="speedGuideCard">
+        <div class="splits-header">
+          <div class="card-label" style="margin-bottom:0" id="speedGuideTitle">Treadmill Speed Guide</div>
+          <span style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--muted);letter-spacing:0.12em">REAL-TIME</span>
+        </div>
+        <div id="speedGuideContainer">
+          <div class="empty-splits">Konfigurasi pace dulu, lalu mulai latihan</div>
+        </div>
+      </div>
+
+      <!-- Splits -->
+      <div class="card splits-card" style="margin-top:20px">
+        <div class="splits-header">
+          <div class="card-label" style="margin-bottom:0">Split Log</div>
+          <button class="btn-clear-splits" onclick="clearSplits()">Hapus</button>
+        </div>
+        <div id="splitsContainer">
+          <div class="empty-splits">Belum ada split tercatat</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Countdown overlay -->
+<div class="countdown-overlay" id="countdownOverlay">
+  <div class="countdown-backdrop"></div>
+  <div class="countdown-content">
+    <div class="countdown-next-label">Fase berikutnya</div>
+    <div class="countdown-next-phase" id="countdownNextPhase" style="color:var(--accent)">INTERVAL</div>
+    <div class="countdown-number" id="countdownNumber">5</div>
+    <div class="countdown-bar-wrap">
+      <div class="countdown-bar-fill" id="countdownBarFill" style="width:100%"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ——— State ———
+let mode = 'interval';
+let runEnv = 'treadmill'; // 'treadmill' | 'outdoor'
+let running = false;
+let paused = false;
+let currentPhase = 0;
+let phaseTimeLeft = 0;
+let totalElapsed = 0;
+let currentSet = 0;
+let totalSets = 1;
+let phases = [];
+let splits = [];
+let timerInterval = null;
+let phaseStartTime = 0;
+let phaseTotal = 0;
+let manualSplitCount = 0;
+let countdownActive = false;
+const COUNTDOWN_SECS = 10;
+
+// Distance tracking
+let totalDistKm = 0;
+let phaseDistKm = 0;
+
+// GPS state
+let gpsWatchId = null;
+let gpsLastLat = null;
+let gpsLastLng = null;
+let gpsLastTime = null;
+let gpsLocked = false;
+let realPaceSec = null; // real pace in sec/km
+let gpsSpeedMs = null;  // speed from GPS in m/s
+
+// ——— Speech Synthesis ———
+const synth = window.speechSynthesis;
+let speechLang = 'en-US'; // Web Speech ID
+
+function speak(text, rate = 0.92, pitch = 1.05) {
+  if (!synth) return;
+  synth.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = speechLang;
+  utt.rate = rate;
+  utt.pitch = pitch;
+  utt.volume = 1;
+  synth.speak(utt);
+}
+
+function speakCountdown(n) {
+  speak(String(n), 0.95, 1.1);
+}
+
+const PHASE_SPEECH = {
+  warmup:   'Warm Up',
+  interval: 'Interval',
+  recovery: 'Recovery',
+  cooldown: 'Cool Down',
+  easy:     'Easy Run',
+  tempo:    'Tempo Run',
+};
+
+// ——— Phase colors & labels ———
+const PHASE_STYLE = {
+  warmup:   { color: 'var(--warmup)',   label: 'WARM UP',   dot: '#ff9500' },
+  interval: { color: 'var(--interval)', label: 'INTERVAL',  dot: '#ff3b5c' },
+  recovery: { color: 'var(--recovery)', label: 'RECOVERY',  dot: '#00d4aa' },
+  cooldown: { color: 'var(--cooldown)', label: 'COOLDOWN',  dot: '#4dc8ff' },
+  easy:     { color: 'var(--easy)',     label: 'EASY RUN',  dot: '#a8e6cf' },
+  tempo:    { color: 'var(--easy)',     label: 'TEMPO',     dot: '#a8e6cf' },
+};
+
+// ——— Environment switch ———
+function setEnv(env) {
+  runEnv = env;
+  document.getElementById('envTreadmill').classList.toggle('active', env === 'treadmill');
+  document.getElementById('envOutdoor').classList.toggle('active', env === 'outdoor');
+
+  const isTM = env === 'treadmill';
+  document.getElementById('speedBanner').style.display = isTM ? '' : 'none';
+  document.getElementById('gpsPanel').style.display = isTM ? 'none' : '';
+  document.getElementById('gpsPanel').classList.toggle('visible', !isTM);
+  document.getElementById('gpsActivateCard').style.display = isTM ? 'none' : '';
+  document.getElementById('speedGuideTitle').textContent = isTM ? 'Treadmill Speed Guide' : 'Target Pace per Fase';
+  document.getElementById('distTotalLabel').textContent = isTM ? 'Est. Jarak' : 'GPS Jarak';
+
+  // Reset GPS button if switching back to treadmill
+  if (isTM && gpsWatchId !== null) {
+    navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = null;
+  }
+
+  renderSpeedGuide();
+}
+
+// ——— GPS Functions (iOS-safe) ———
+let gpsPermissionGranted = false;
+
+// Called DIRECTLY from button tap — iOS requires direct user gesture
+function requestGPSPermission() {
+  const btn = document.getElementById('gpsActivateBtn');
+  const note = document.getElementById('gpsNote');
+
+  if (!('geolocation' in navigator)) {
+    btn.textContent = '❌ GPS tidak didukung browser ini';
+    btn.classList.add('denied');
+    return;
+  }
+
+  btn.textContent = '⏳ Meminta izin…';
+  setGPSStatus('acquiring', 'Meminta izin lokasi…', '');
+
+  // Step 1: getCurrentPosition triggers the iOS permission dialog
+  // This MUST be called directly from a user tap — not from a chain
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      // Permission granted!
+      gpsPermissionGranted = true;
+      btn.innerHTML = '<span>✅</span> GPS Aktif';
+      btn.classList.add('granted');
+      note.innerHTML = '✅ Izin lokasi diberikan. GPS siap digunakan.';
+
+      const acc = Math.round(pos.coords.accuracy);
+      setGPSStatus('locked', 'GPS siap', `±${acc} m`);
+
+      // Seed last position so watchPosition has a starting point
+      gpsLastLat = pos.coords.latitude;
+      gpsLastLng = pos.coords.longitude;
+      gpsLastTime = pos.timestamp;
+
+      // Start watchPosition now that permission is granted
+      startGPSWatch();
+    },
+    function(err) {
+      gpsPermissionGranted = false;
+      const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      let msg = '';
+      if (err.code === 1) {
+        msg = ios
+          ? '❌ Ditolak. Buka: Settings → Safari → Location → Allow'
+          : '❌ Izin ditolak. Aktifkan lokasi di pengaturan browser.';
+        btn.textContent = '🔒 Izin ditolak — tap untuk coba lagi';
+        btn.classList.add('denied');
+        btn.classList.remove('granted');
+        note.innerHTML = ios
+          ? '📍 Izin lokasi ditolak.<br>Buka <strong>Settings → Privacy → Location Services → Safari</strong> → set ke "While Using".<br>Atau <strong>Settings → Safari → Location → Allow</strong>.'
+          : '📍 Izin lokasi ditolak di browser.';
+        note.classList.add('visible');
+      } else if (err.code === 2) {
+        msg = '⚠️ Sinyal GPS tidak tersedia';
+        btn.textContent = '📡 Aktifkan GPS';
+      } else {
+        msg = '⏱ GPS timeout — coba lagi';
+        btn.textContent = '📡 Coba lagi';
+      }
+      setGPSStatus('lost', msg, '');
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+}
+
+function startGPSWatch() {
+  // Clear any existing watch
+  if (gpsWatchId !== null) {
+    navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = null;
+  }
+
+  gpsWatchId = navigator.geolocation.watchPosition(
+    onGPSPosition,
+    function(err) {
+      if (err.code === 1) {
+        setGPSStatus('lost', 'Izin GPS dicabut', '');
+      } else if (err.code === 2) {
+        setGPSStatus('lost', 'Sinyal GPS hilang', '');
+      }
+    },
+    { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 }
+  );
+}
+
+function startGPS() {
+  if (!navigator.geolocation) {
+    setGPSStatus('lost', 'GPS tidak tersedia di browser ini', '');
+    return;
+  }
+  if (!gpsPermissionGranted) {
+    // Permission not yet requested — show guide, don't call GPS here
+    setGPSStatus('acquiring', 'Tap "Aktifkan GPS" di panel kiri', '');
+    return;
+  }
+  // Permission was already granted via requestGPSPermission()
+  gpsLastLat = null; gpsLastLng = null; gpsLastTime = null;
+  realPaceSec = null; gpsSpeedMs = null;
+  setGPSStatus('acquiring', 'Mencari sinyal…', '');
+  startGPSWatch();
+}
+
+function stopGPS() {
+  if (gpsWatchId !== null) {
+    navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = null;
+  }
+  realPaceSec = null;
+  gpsSpeedMs = null;
+  setGPSStatus('locked', 'GPS dijeda (izin tetap aktif)', gpsLastLat ? `±OK` : '');
+}
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function secPerKmToStr(secPerKm) {
+  if (!secPerKm || secPerKm <= 0 || !isFinite(secPerKm)) return '—:——';
+  const m = Math.floor(secPerKm / 60);
+  const s = Math.round(secPerKm % 60);
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function onGPSPosition(pos) {
+  const { latitude: lat, longitude: lng, accuracy, speed } = pos.coords;
+  const now = pos.timestamp;
+
+  gpsLocked = true;
+  setGPSStatus('locked', `GPS terkunci`, `±${Math.round(accuracy)} m`);
+
+  if (!running || paused) {
+    gpsLastLat = lat; gpsLastLng = lng; gpsLastTime = now;
+    return;
+  }
+
+  // Calculate distance delta
+  if (gpsLastLat !== null && gpsLastLng !== null) {
+    const distDelta = haversineKm(gpsLastLat, gpsLastLng, lat, lng);
+    const timeDeltaSec = (now - gpsLastTime) / 1000;
+
+    // Only count if reasonable movement (filter GPS jitter < 3m)
+    if (distDelta > 0.003 && timeDeltaSec > 0 && timeDeltaSec < 30) {
+      totalDistKm += distDelta;
+      phaseDistKm += distDelta;
+
+      // Real pace from GPS speed or haversine
+      const speedMps = speed !== null && speed !== undefined && speed > 0
+        ? speed
+        : distDelta * 1000 / timeDeltaSec;
+
+      if (speedMps > 0.5) { // > 1.8 km/h = actually moving
+        gpsSpeedMs = speedMps;
+        realPaceSec = 1000 / speedMps; // sec per km
+      }
+    }
+  }
+
+  gpsLastLat = lat; gpsLastLng = lng; gpsLastTime = now;
+  updateDistanceDisplay();
+  updateOutdoorPaceCompare();
+}
+
+function setGPSStatus(state, text, accuracy) {
+  const dot = document.getElementById('gpsDot');
+  dot.className = 'gps-dot ' + state;
+  document.getElementById('gpsStatusText').textContent = text;
+  document.getElementById('gpsAccuracy').textContent = accuracy;
+}
+
+function updateOutdoorPaceCompare() {
+  const p = phases[currentPhase];
+  const targetSec = p ? parsePaceSec(p.pace) : null;
+  const realStr = secPerKmToStr(realPaceSec);
+
+  document.getElementById('realPaceVal').textContent = realStr;
+  document.getElementById('targetPaceVal').textContent = p ? p.pace : '—:——';
+
+  const badge = document.getElementById('paceDiffBadge');
+  const diffEl = document.getElementById('paceDiffVal');
+
+  if (!realPaceSec || !targetSec) {
+    diffEl.textContent = '—';
+    badge.className = 'pace-diff-badge nodata';
+    badge.textContent = 'Menunggu sinyal GPS…';
+    return;
+  }
+
+  const diffSec = realPaceSec - targetSec; // positive = slower, negative = faster
+  const absDiff = Math.abs(diffSec);
+  const diffMin = Math.floor(absDiff / 60);
+  const diffSecR = Math.round(absDiff % 60);
+  const diffStr = `${diffMin > 0 ? diffMin + 'm ' : ''}${diffSecR}s`;
+
+  if (absDiff <= 10) {
+    diffEl.textContent = '±' + diffStr;
+    diffEl.style.color = 'var(--accent)';
+    badge.className = 'pace-diff-badge ontarget';
+    badge.textContent = '✓ On Target!';
+  } else if (diffSec < 0) {
+    diffEl.textContent = '-' + diffStr;
+    diffEl.style.color = 'var(--recovery)';
+    badge.className = 'pace-diff-badge faster';
+    badge.textContent = `▲ ${diffStr} lebih cepat dari target`;
+  } else {
+    diffEl.textContent = '+' + diffStr;
+    diffEl.style.color = 'var(--interval)';
+    badge.className = 'pace-diff-badge slower';
+    badge.textContent = `▼ ${diffStr} lebih lambat dari target`;
+  }
+}
+
+function parsePaceSec(paceStr) {
+  if (!paceStr) return null;
+  const parts = paceStr.split(':');
+  if (parts.length < 2) return null;
+  return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+}
+
+// ——— Distance Display ———
+function updateDistanceDisplay() {
+  document.getElementById('distTotal').textContent = totalDistKm.toFixed(2);
+  document.getElementById('distPhase').textContent = phaseDistKm.toFixed(2);
+}
+
+// ——— Treadmill distance per tick ———
+function accumulateTreadmillDistance() {
+  const p = phases[currentPhase];
+  if (!p) return;
+  const kmh = paceToSpeed(p.pace);
+  if (!kmh) return;
+  const kmPerSec = kmh / 3600;
+  totalDistKm += kmPerSec;
+  phaseDistKm += kmPerSec;
+  updateDistanceDisplay();
+}
+
+// ——— Live clock ———
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('liveClock').textContent = `${h}:${m}:${s}`;
+
+  const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  document.getElementById('liveDate').textContent =
+    `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ——— Mode switch ———
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', (i===0&&m==='interval')||(i===1&&m==='easy'));
+  });
+  document.getElementById('intervalConfig').classList.toggle('hidden', m==='easy');
+  document.getElementById('easyConfig').classList.toggle('visible', m==='easy');
+  document.getElementById('easyConfig').style.display = m==='easy' ? 'block' : 'none';
+  document.getElementById('intervalConfig').style.display = m==='interval' ? 'block' : 'none';
+
+  // Pace fields
+  document.querySelectorAll('.interval-only').forEach(el => {
+    el.style.display = m==='interval' ? '' : 'none';
+  });
+  document.querySelectorAll('.easy-only').forEach(el => {
+    el.style.display = m==='easy' ? '' : 'none';
+  });
+}
+// init
+document.getElementById('easyConfig').style.display = 'none';
+document.querySelectorAll('.easy-only').forEach(el => el.style.display='none');
+// init env
+document.getElementById('gpsPanel').style.display = 'none';
+document.getElementById('gpsActivateCard').style.display = 'none';
+setEnv('treadmill');
+
+// ——— Build phase sequence ———
+function buildPhases() {
+  const g = (id) => parseInt(document.getElementById(id).value)||0;
+  const phases = [];
+
+  if (mode === 'interval') {
+    const wu = g('warmupMin')*60 + g('warmupSec');
+    const iv = g('intervalMin')*60 + g('intervalSec');
+    const rv = g('recoveryMin')*60 + g('recoverySec');
+    const cd = g('cooldownMin')*60 + g('cooldownSec');
+    const reps = g('repeatCount') || 1;
+
+    if (wu > 0) phases.push({ type:'warmup', duration:wu, pace: document.getElementById('paceWarmup').value });
+    for (let i=1; i<=reps; i++) {
+      if (iv > 0) phases.push({ type:'interval', duration:iv, pace: document.getElementById('paceInterval').value, set:i, totalSets:reps });
+      if (rv > 0 && i < reps) phases.push({ type:'recovery', duration:rv, pace: document.getElementById('paceRecovery').value, set:i, totalSets:reps });
+    }
+    if (cd > 0) phases.push({ type:'cooldown', duration:cd, pace: document.getElementById('paceCooldown').value });
+  } else {
+    const wu = g('easyWarmupMin')*60 + g('easyWarmupSec');
+    const er = g('easyRunMin')*60 + g('easyRunSec');
+    const cd = g('easyCooldownMin')*60 + g('easyCooldownSec');
+
+    if (wu > 0) phases.push({ type:'warmup', duration:wu, pace: document.getElementById('paceWarmup').value });
+    if (er > 0) phases.push({ type:'easy', duration:er, pace: document.getElementById('paceEasy').value });
+    if (cd > 0) phases.push({ type:'cooldown', duration:cd, pace: document.getElementById('paceCooldown').value });
+  }
+  return phases;
+}
+
+// ——— Timer ———
+function toggleStart() {
+  if (!running) {
+    startWorkout();
+  } else {
+    stopWorkout();
+  }
+}
+
+function startWorkout() {
+  phases = buildPhases();
+  if (!phases.length) { alert('Atur durasi minimal satu fase!'); return; }
+
+  running = true;
+  paused = false;
+  currentPhase = 0;
+  totalElapsed = 0;
+  totalDistKm = 0;
+  phaseDistKm = 0;
+  splits = [];
+  manualSplitCount = 0;
+  renderSplits();
+  updateDistanceDisplay();
+
+  document.getElementById('startBtn').textContent = 'STOP';
+  document.getElementById('startBtn').classList.add('stop');
+  document.getElementById('pauseBtn').disabled = false;
+  document.getElementById('splitBtn').disabled = false;
+
+  if (runEnv === 'outdoor') startGPS();
+
+  enterPhase(0);
+  renderSpeedGuide();
+  const firstPhaseLabel = PHASE_SPEECH[phases[0].type] || 'Go';
+  speak(`Workout started. ${firstPhaseLabel}. Go!`, 0.9, 1.05);
+  timerInterval = setInterval(tick, 1000);
+}
+
+function stopWorkout() {
+  running = false;
+  paused = false;
+  clearInterval(timerInterval);
+
+  document.getElementById('startBtn').textContent = 'MULAI LATIHAN';
+  document.getElementById('startBtn').classList.remove('stop');
+  document.getElementById('pauseBtn').disabled = true;
+  document.getElementById('pauseBtn').classList.remove('paused');
+  document.getElementById('pauseBtn').textContent = '⏸ PAUSE';
+  document.getElementById('splitBtn').disabled = true;
+
+  document.getElementById('phaseName').textContent = '— SELESAI —';
+  document.getElementById('phaseBadge').textContent = 'STOP';
+  document.getElementById('phaseBadge').style.color = 'var(--muted)';
+  document.getElementById('phaseBadge').style.borderColor = 'var(--muted)';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('timerCard').classList.remove('finished');
+  document.getElementById('speedBig').textContent = '—';
+  document.getElementById('speedPaceRef').textContent = '— min/km';
+  hideCountdown();
+  synth && synth.cancel();
+  if (runEnv === 'outdoor') stopGPS();
+  renderSpeedGuide();
+}
+
+function togglePause() {
+  if (!running) return;
+  paused = !paused;
+  const btn = document.getElementById('pauseBtn');
+  if (paused) {
+    btn.textContent = '▶ LANJUT';
+    btn.classList.add('paused');
+    synth && synth.cancel();
+    hideCountdown();
+    speak('Paused', 0.9, 1.0);
+  } else {
+    btn.textContent = '⏸ PAUSE';
+    btn.classList.remove('paused');
+    speak('Resume!', 1.0, 1.1);
+  }
+}
+
+function tick() {
+  if (paused) return;
+  phaseTimeLeft--;
+  totalElapsed++;
+
+  // Accumulate treadmill distance
+  if (runEnv === 'treadmill') accumulateTreadmillDistance();
+
+  // Countdown logic: last COUNTDOWN_SECS seconds before phase ends
+  const nextIdx = currentPhase + 1;
+  const hasNext = nextIdx < phases.length;
+
+  if (phaseTimeLeft <= COUNTDOWN_SECS && phaseTimeLeft > 0 && hasNext) {
+    const nextPhase = phases[nextIdx];
+    const nextLabel = PHASE_SPEECH[nextPhase.type] || 'Next Phase';
+
+    // First tick of countdown: announce "Next [phase] in 10"
+    if (phaseTimeLeft === COUNTDOWN_SECS) {
+      speak(`Next ${nextLabel} in ${COUNTDOWN_SECS}`, 0.88, 1.05);
+      showCountdown(nextPhase, phaseTimeLeft);
+    } else {
+      updateCountdownNumber(phaseTimeLeft, nextPhase);
+      speakCountdown(phaseTimeLeft);
+    }
+  } else if (phaseTimeLeft > COUNTDOWN_SECS) {
+    hideCountdown();
+  }
+
+  if (phaseTimeLeft <= 0) {
+    hideCountdown();
+    autoSplit();
+    currentPhase++;
+    if (currentPhase >= phases.length) {
+      finishWorkout();
+      return;
+    }
+    // Announce new phase start
+    const np = phases[currentPhase];
+    const npLabel = PHASE_SPEECH[np.type] || 'Go';
+    speak(`${npLabel}! Go!`, 1.0, 1.1);
+    enterPhase(currentPhase);
+    return;
+  }
+  updateTimerUI();
+}
+
+function enterPhase(idx) {
+  const p = phases[idx];
+  phaseTimeLeft = p.duration;
+  phaseTotal = p.duration;
+  phaseStartTime = totalElapsed;
+  phaseDistKm = 0;
+
+  const style = PHASE_STYLE[p.type] || PHASE_STYLE['easy'];
+  document.getElementById('phaseName').textContent = style.label;
+  document.getElementById('phaseBadge').textContent = style.label;
+  document.getElementById('phaseBadge').style.color = style.color;
+  document.getElementById('phaseBadge').style.borderColor = style.color;
+  document.getElementById('progressBar').style.background = style.color;
+
+  // Set info
+  if (p.set) {
+    document.getElementById('metricSet').textContent = `${p.set}/${p.totalSets}`;
+  } else if (p.type === 'easy') {
+    document.getElementById('metricSet').textContent = '—';
+  }
+
+  document.getElementById('metricPace').textContent = p.pace || '—:——';
+  document.getElementById('targetPaceVal').textContent = p.pace || '—:——';
+  if (runEnv === 'treadmill') updateSpeedDisplay(p.pace);
+  if (runEnv === 'outdoor') updateOutdoorPaceCompare();
+  renderSpeedGuide();
+  updateTimerUI();
+}
+
+function updateTimerUI() {
+  // Phase timer
+  document.getElementById('timerDisplay').textContent = fmtTime(phaseTimeLeft);
+
+  // Progress bar
+  const pct = Math.max(0, ((phaseTotal - phaseTimeLeft) / phaseTotal) * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+
+  // Sub label
+  const p = phases[currentPhase];
+  document.getElementById('timerSub').textContent =
+    `${fmtTime(phaseTimeLeft)} tersisa · ${PHASE_STYLE[p.type]?.label || ''} ${p.set ? `(Set ${p.set})` : ''}`;
+
+  // Total elapsed
+  document.getElementById('metricElapsed').textContent = fmtTime(totalElapsed);
+}
+
+// ——— Countdown overlay ———
+function showCountdown(nextPhase, n) {
+  countdownActive = true;
+  const style = PHASE_STYLE[nextPhase.type] || PHASE_STYLE['easy'];
+  const overlay = document.getElementById('countdownOverlay');
+  const label = nextPhase.set
+    ? `${style.label} · Set ${nextPhase.set}/${nextPhase.totalSets}`
+    : style.label;
+
+  document.getElementById('countdownNextPhase').textContent = label;
+  document.getElementById('countdownNextPhase').style.color = style.color;
+  document.getElementById('countdownNumber').textContent = n;
+  document.getElementById('countdownNumber').style.animation = 'none';
+  void document.getElementById('countdownNumber').offsetWidth; // reflow
+  document.getElementById('countdownNumber').style.animation = 'countPop 1s ease-out';
+  document.getElementById('countdownBarFill').style.width = (n / COUNTDOWN_SECS * 100) + '%';
+  overlay.classList.add('visible');
+  overlay.style.pointerEvents = 'auto';
+}
+
+function updateCountdownNumber(n, nextPhase) {
+  const style = PHASE_STYLE[nextPhase.type] || PHASE_STYLE['easy'];
+  const el = document.getElementById('countdownNumber');
+  el.textContent = n;
+  el.style.animation = 'none';
+  void el.offsetWidth;
+  el.style.animation = 'countPop 1s ease-out';
+  // Color shift: red on 3-1
+  el.style.color = n <= 3 ? style.color : 'var(--accent)';
+  document.getElementById('countdownBarFill').style.width = (n / COUNTDOWN_SECS * 100) + '%';
+}
+
+function hideCountdown() {
+  countdownActive = false;
+  const overlay = document.getElementById('countdownOverlay');
+  overlay.classList.remove('visible');
+  overlay.style.pointerEvents = 'none';
+}
+
+function finishWorkout() {
+  running = false;
+  clearInterval(timerInterval);
+  hideCountdown();
+  if (runEnv === 'outdoor') stopGPS();
+  // Victory speech!
+  setTimeout(() => speak("You did a great job! Well done!", 0.85, 1.15), 300);
+  document.getElementById('timerDisplay').textContent = '✓ DONE';
+  document.getElementById('phaseName').textContent = '— SELESAI —';
+  document.getElementById('phaseBadge').textContent = 'FINISH';
+  document.getElementById('phaseBadge').style.color = 'var(--accent)';
+  document.getElementById('phaseBadge').style.borderColor = 'var(--accent)';
+  document.getElementById('progressBar').style.width = '100%';
+  document.getElementById('startBtn').textContent = 'MULAI LATIHAN';
+  document.getElementById('startBtn').classList.remove('stop');
+  document.getElementById('pauseBtn').disabled = true;
+  document.getElementById('splitBtn').disabled = true;
+  document.getElementById('timerCard').classList.add('finished');
+}
+
+// ——— Splits ———
+function autoSplit() {
+  const p = phases[currentPhase];
+  if (!p) return;
+  const style = PHASE_STYLE[p.type] || PHASE_STYLE['easy'];
+  const label = p.set ? `${style.label} (Set ${p.set})` : style.label;
+  splits.push({
+    num: splits.length + 1,
+    type: p.type,
+    label,
+    duration: p.duration,
+    pace: p.pace,
+    speed: paceToSpeed(p.pace),
+    distKm: phaseDistKm,
+    elapsedAt: totalElapsed,
+    color: style.color,
+    auto: true,
+  });
+  renderSplits();
+}
+
+function addManualSplit() {
+  if (!running || paused) return;
+  manualSplitCount++;
+  const p = phases[currentPhase];
+  const style = PHASE_STYLE[p?.type] || PHASE_STYLE['easy'];
+  splits.push({
+    num: splits.length + 1,
+    type: 'manual',
+    label: `Manual Split #${manualSplitCount}`,
+    duration: totalElapsed,
+    pace: p?.pace || '—',
+    speed: paceToSpeed(p?.pace),
+    distKm: totalDistKm,
+    elapsedAt: totalElapsed,
+    color: 'var(--accent)',
+    auto: false,
+  });
+  renderSplits();
+}
+
+function clearSplits() {
+  splits = [];
+  renderSplits();
+}
+
+function renderSplits() {
+  const c = document.getElementById('splitsContainer');
+  if (!splits.length) {
+    c.innerHTML = '<div class="empty-splits">Belum ada split tercatat</div>';
+    return;
+  }
+
+  const isTM = runEnv === 'treadmill';
+
+  let rows = splits.map((s, i) => {
+    const elapsed = fmtTime(s.elapsedAt);
+    const speedStr = isTM && s.speed !== null && s.speed !== undefined ? fmtSpeed(s.speed) + ' km/j' : '—';
+    const distStr = (s.distKm !== undefined ? s.distKm.toFixed(2) : '0.00') + ' km';
+    return `
+      <tr>
+        <td>${splits.length - i}</td>
+        <td><span class="split-phase-tag" style="color:${s.color};border-color:${s.color}">${s.label}</span></td>
+        <td>${s.auto ? fmtTime(s.duration) : '—'}</td>
+        <td>${elapsed}</td>
+        <td>${s.pace}</td>
+        ${isTM ? `<td style="color:var(--accent);font-weight:500">${speedStr}</td>` : ''}
+        <td style="color:var(--accent3)">${distStr}</td>
+      </tr>`;
+  }).reverse().join('');
+
+  const speedHeader = isTM ? '<th>Speed</th>' : '';
+  c.innerHTML = `
+    <table class="splits-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Fase</th>
+          <th>Durasi</th>
+          <th>Elapsed</th>
+          <th>Pace</th>
+          ${speedHeader}
+          <th>Jarak</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ——— Pace / Speed conversion ———
+function paceToSpeed(paceStr) {
+  // paceStr like "4:30" → 4.5 min/km → 60/4.5 = 13.33 km/h
+  if (!paceStr || paceStr === '—') return null;
+  const parts = paceStr.split(':');
+  if (parts.length < 2) return null;
+  const mins = parseFloat(parts[0]);
+  const secs = parseFloat(parts[1]);
+  if (isNaN(mins) || isNaN(secs)) return null;
+  const totalMin = mins + secs / 60;
+  if (totalMin <= 0) return null;
+  return 60 / totalMin;
+}
+
+function fmtSpeed(kmh) {
+  if (kmh === null || isNaN(kmh)) return '—';
+  return kmh.toFixed(1);
+}
+
+function updateSpeedDisplay(paceStr) {
+  const kmh = paceToSpeed(paceStr);
+  document.getElementById('speedBig').textContent = kmh !== null ? fmtSpeed(kmh) : '—';
+  document.getElementById('speedPaceRef').textContent = paceStr ? `${paceStr} min/km` : '— min/km';
+}
+
+function renderSpeedGuide() {
+  const c = document.getElementById('speedGuideContainer');
+  const builtPhases = buildPhases();
+  if (!builtPhases.length) {
+    c.innerHTML = '<div class="empty-splits">Konfigurasi pace dulu, lalu mulai latihan</div>';
+    return;
+  }
+
+  const isTM = runEnv === 'treadmill';
+  const seen = new Set();
+  const rows = [];
+  for (const p of builtPhases) {
+    const key = p.type + '|' + p.pace;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push(p);
+  }
+
+  const currentType = running && phases[currentPhase] ? phases[currentPhase].type : null;
+  const currentPace = running && phases[currentPhase] ? phases[currentPhase].pace : null;
+
+  c.innerHTML = rows.map(p => {
+    const style = PHASE_STYLE[p.type] || PHASE_STYLE['easy'];
+    const kmh = paceToSpeed(p.pace);
+    const isActive = running && p.type === currentType && p.pace === currentPace;
+    const rightSide = isTM
+      ? `<span class="speed-guide-kmh" style="color:${style.color}">${kmh !== null ? fmtSpeed(kmh) : '—'}</span>
+         <div><div class="speed-unit" style="font-size:0.7rem">km/j</div>
+         <div class="speed-guide-pace">${p.pace} /km</div></div>`
+      : `<span class="speed-guide-kmh" style="color:${style.color};font-size:1.3rem">${p.pace}</span>
+         <div><div class="speed-unit" style="font-size:0.7rem">min/km</div></div>`;
+    return `
+      <div class="speed-guide-row ${isActive ? 'active-phase' : ''}">
+        <div class="speed-guide-left">
+          <span class="phase-dot" style="background:${style.dot}"></span>
+          <span class="speed-guide-name">${style.label}</span>
+          <span class="active-arrow">◀ SEKARANG</span>
+        </div>
+        <div class="speed-guide-vals">${rightSide}</div>
+      </div>`;
+  }).join('');
+}
+
+// ——— Utility ———
+function fmtTime(secs) {
+  if (secs < 0) secs = 0;
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+</script>
+</body>
+</html>
